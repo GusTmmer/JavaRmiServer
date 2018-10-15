@@ -5,6 +5,7 @@
  */
 package HelloWorld;
 
+import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
@@ -34,7 +35,7 @@ public interface InterfaceServ extends Remote
 
     public Hospedagem compraHospedagem(ConsultaHospedagem ch) throws RemoteException;
 
-    public ConsultaPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException;
+    public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException;
     
     public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException;
     

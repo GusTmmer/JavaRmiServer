@@ -1,5 +1,6 @@
 package HelloWorld;
 
+import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
@@ -158,10 +159,6 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         Map<String, Passagem> passagensCompradas = new HashMap<>();
         passagensCompradas.put("Ida", passagemIdaComprada);
 
-        // Alterando dados do servidor.
-        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
-        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
-
         if (!cp.isOneWay()) {
             for (Passagem p : consultaRetorno.get("Volta")) {
                 if (p.getPrice().contentEquals(cp.getPrice())) {
@@ -176,9 +173,13 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             passagensCompradas.put("Volta", passagemVoltaComprada);
 
             // Alterando dados do servidor.
-            spotsLeft = passagemVoltaComprada.getNSpotsLeft();
+            int spotsLeft = passagemVoltaComprada.getNSpotsLeft();
             passagemVoltaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
         }
+
+        // Alterando dados do servidor.
+        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
+        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
 
 
         return passagensCompradas;
@@ -222,7 +223,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     }
 
     @Override
-    public ConsultaPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException {
+    public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException {
 
         List<Hospedagem> hospedagens = consultaHospedagem(ch);
 
@@ -241,13 +242,49 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         if (hospedagemComprada == null)
             return null;
 
-        Map<String, List<Passagem>> passagens = consultaPassagem(cp);
+        Map<String, List<Passagem>> consultaRetorno = consultaPassagem(cp);
 
-        if (passagens == null)
+        if (consultaRetorno == null)
             return null;
 
 
+        // Tentando achar uma passagem dentre as retornadas que tenha o mesmo preco da qual estamos comprando.
+        Passagem passagemIdaComprada = null, passagemVoltaComprada = null;
 
+        for (Passagem p : consultaRetorno.get("Ida")) {
+            if (p.getPrice().contentEquals(cp.getPrice())) {
+                passagemIdaComprada = p;
+                break;
+            }
+        }
+
+        if (passagemIdaComprada == null)
+            return null;
+
+        Map<String, Passagem> passagensCompradas = new HashMap<>();
+        passagensCompradas.put("Ida", passagemIdaComprada);
+
+        if (!cp.isOneWay()) {
+            for (Passagem p : consultaRetorno.get("Volta")) {
+                if (p.getPrice().contentEquals(cp.getPrice())) {
+                    passagemVoltaComprada = p;
+                    break;
+                }
+            }
+
+            if (passagemVoltaComprada == null)
+                return null;
+
+            passagensCompradas.put("Volta", passagemVoltaComprada);
+
+            // Alterando dados do servidor relativos a passagem.
+            int spotsLeft = passagemVoltaComprada.getNSpotsLeft();
+            passagemVoltaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
+        }
+
+        // Alterando dados do servidor relativos a passagem.
+        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
+        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
 
         // Realizando alteracao dos dados do servidor.
         int entryDate = ch.getEntryDate();
@@ -259,6 +296,8 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
 
         }
+
+        return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
     }
 
     @Override
