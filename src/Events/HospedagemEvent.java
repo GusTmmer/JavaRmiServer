@@ -5,6 +5,8 @@
  */
 package Events;
 
+import Supervisionados.Hospedagem;
+
 /**
  *
  * @author a1729756
@@ -12,29 +14,38 @@ package Events;
 public class HospedagemEvent implements IEvent {
     
     private final String location;
-    private final String date;
+    private final int firstDate;
+    private final int lastDate;
     private final int desiredRooms;
 
-    public HospedagemEvent(String location, String date, int desired_rooms) {
+    public HospedagemEvent(String location, int first_date, int last_date, int desired_rooms) {
         this.location = location;
-        this.date = date;
+        this.firstDate = first_date;
+        this.lastDate = last_date;
+        this.desiredRooms = desired_rooms;
+    }
+    
+    public HospedagemEvent(Hospedagem h) {
+        this.location = h.getLocation();
+        this.firstDate = h.getFirstDate?
+        this.lastDate = h.getLastDate?
         this.desiredRooms = desired_rooms;
     }
     
     /** Compares two events.
      * 
      * @param h The instance of HospedagemEvent we're comparing to.
-     * @return boolean true if equals; false, otherwise.
+     * @return boolean true if this event can "fit" in event h.
      */
-    public boolean equalsToEvent(HospedagemEvent h) {
+    public boolean isInEvent(HospedagemEvent h) {
         
         if (!location.equalsIgnoreCase(h.getLocation()))
             return false;
         
-        if (!date.equalsIgnoreCase(h.getDate()))
+        if (desiredRooms > h.getDesiredRooms())
             return false;
         
-        if (desiredRooms != h.getDesiredRooms())
+        if (firstDate < h.getFirstDate() || lastDate < h.getLastDate())
             return false;
         
         return true;
@@ -44,8 +55,12 @@ public class HospedagemEvent implements IEvent {
         return location;
     }
 
-    public String getDate() {
-        return date;
+    public int getFirstDate() {
+        return firstDate;
+    }
+
+    public int getLastDate() {
+        return lastDate;
     }
 
     public int getDesiredRooms() {

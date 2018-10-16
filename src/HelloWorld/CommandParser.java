@@ -42,9 +42,8 @@ public class CommandParser {
         } else if (command.equalsIgnoreCase("add p")) {
             novaPassagem();
             
-        //}
-        //} else if (command.equalsIgnoreCase("check p")) {
-            //mostra_passagens();
+        } else if (command.equalsIgnoreCase("check h")) {
+            mostra_hospedagens();
             
         } else { 
             System.out.println("Not supported.");
@@ -66,7 +65,7 @@ public class CommandParser {
         int spots = scanner.nextInt();    
         
         System.out.print("Custo da diaria: ");
-        float price = scanner.nextFloat();   
+        String price = scanner.nextLine();   
         
         int day = Integer.parseInt(date_start.split("/")[0]);
         int month = Integer.parseInt(date_start.split("/")[1]);
@@ -107,7 +106,7 @@ public class CommandParser {
         String spots = scanner.nextLine();
         
         System.out.print("Custo da passagem: ");
-        float price = scanner.nextFloat();
+        String price = scanner.nextLine();
 
         Date dateObj = new Date(date);
 
@@ -120,5 +119,35 @@ public class CommandParser {
         );
 
         server.adicionaPassagem(nova_passagem);
+    }
+    
+    private void mostra_hospedagens() {
+        System.out.print("Local: ");
+        String location = scanner.nextLine();
+
+        System.out.print("Primeiro dia disponivel (DD/MM/AAAA): ");
+        String date_start = scanner.nextLine();
+        
+        System.out.print("Numero de dias disponiveis: ");
+        int days_available = scanner.nextInt();
+
+        System.out.print("Número de quartos: ");
+        int spots = scanner.nextInt();    
+        
+        int day = Integer.parseInt(date_start.split("/")[0]);
+        int month = Integer.parseInt(date_start.split("/")[1]);
+        int year = Integer.parseInt(date_start.split("/")[2]);
+        
+        Date first_date = new Date(day, month, year);
+        
+        ConsultaHospedagem ch = new ConsultaHospedagem(location, first_date.reprDay, days_available, spots, spots*4);
+        
+        try {
+            List<Hospedagem> hosp = server.consultaHospedagem(ch);
+            for(int i=0; i<hosp.size(); i++)
+                System.out.println("Preco da diaria: " + hosp.get(i).getPrice());
+        } catch (RemoteException ex) {
+            Logger.getLogger(CommandParser.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }

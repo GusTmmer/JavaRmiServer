@@ -5,6 +5,8 @@
  */
 package Consultas;
 
+import Events.HospedagemEvent;
+import Supervisionados.Hospedagem;
 import java.io.Serializable;
 
 /**

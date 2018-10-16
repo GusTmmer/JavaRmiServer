@@ -4,7 +4,10 @@ import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
+import Events.HospedagemEvent;
 import Events.IEvent;
+import Events.PacoteEvent;
+import Events.PassagemEvent;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
 import java.rmi.RemoteException;
@@ -25,7 +28,9 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     private List<Passagem> passagensDisponiveis;
     private List<Hospedagem> hospedagensDisponiveis;
     
-    private Map<InterfaceCli, List<IEvent>> eventMapping = new ConcurrentHashMap<>();
+    private Map<InterfaceCli, List<HospedagemEvent>> eventHospedagem = new HashMap<>();
+    private Map<InterfaceCli, List<PassagemEvent>> eventPassagem = new HashMap<>();
+    private Map<InterfaceCli, List<PacoteEvent>> eventPacote = new HashMap<>();
     
     ServImpl() throws RemoteException {
         this.passagensDisponiveis = new ArrayList<>();
@@ -56,7 +61,6 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             
             consultaRetorno.put("Volta", passagensVolta);
         }
-
 
         if (consultaRetorno.get("Ida").size() == 0)
             return null;
@@ -300,7 +304,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
     }
 
-    @Override
+    /*@Override
     public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
         
         if (!eventMapping.containsKey(cli))
@@ -313,10 +317,14 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     @Override
     public void removeInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
         eventMapping.get(cli).remove(event);
-    }
+    }*/
     
     public void adicionaPassagem(Passagem passagem) {
         passagensDisponiveis.add(passagem);
+        
+        // Cria um novo evento e compara com os eventos registrados por clientes
+        PassagemEvent event = new PassagemEvent(passagem);
+        comparaEventos(event);
     }
     
     public void adicionaHospedagem(Hospedagem novaHospedagem) {
@@ -336,9 +344,60 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
 
         // If did not exist, simply add to the list.
         hospedagensDisponiveis.add(novaHospedagem);
+        
+        // Cria um novo evento e compara com os eventos registrados por clientes
+        HospedagemEvent event = new HospedagemEvent(novaHospedagem);
+        comparaEventos(event);
     }
     
-    private void notifyClients() {
-
+    private void comparaEventos(HospedagemEvent event) {
+        for (InterfaceCli cliente : eventHospedagem.keySet()) {
+            for (int i = 0; i < eventHospedagem.get(cliente).size(); i++) {
+                for (HospedagemEvent h : eventHospedagem.get(i)) {
+                   if (h.isInEvent(event)) {
+                       notifyClient(cliente, h);
+                   }
+                }
+            }
+        }
+    }
+    
+    private void comparaEventos(PassagemEvent event) {
+        for (InterfaceCli cliente : eventPassagem.keySet()) {
+            for (int i = 0; i < eventPassagem.get(cliente).size(); i++) {
+                for (PassagemEvent p : eventPassagem.get(i)) {
+                   if (event.isInEvent(p)) {
+                       notifyClient(cliente, p);
+                   }
+                }
+            }
+        }
+    }
+    
+    private void comparaEventos(PacoteEvent event) {
+        for (InterfaceCli cliente : eventPacote.keySet()) {
+            for (int i = 0; i < eventPacote.get(cliente).size(); i++) {
+                for (PacoteEvent p : eventPacote.get(i)) {
+                   if (event.isInEvent(p)) {
+                       notifyClient(cliente, p);
+                   }
+                }
+            }
+        }
+    }
+    
+    private void notifyClient(InterfaceCli cliente, HospedagemEvent hosp) {
+       //envia mensagem para cliente
+       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
+    }
+    
+    private void notifyClient(InterfaceCli cliente, PassagemEvent hosp) {
+       //envia mensagem para cliente
+       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
+    }
+    
+    private void notifyClient(InterfaceCli cliente, PacoteEvent hosp) {
+       //envia mensagem para cliente
+       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
     }
 }

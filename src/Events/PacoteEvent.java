@@ -27,12 +27,12 @@ public class PacoteEvent implements IEvent {
         return passagemEvent;
     }
     
-    public boolean equalsToEvent(PacoteEvent p) {
+    public boolean isInEvent(PacoteEvent p) {
         
-        if (!passagemEvent.equalsToEvent(p.getPassagemEvent()))
+        if (!passagemEvent.isInEvent(p.getPassagemEvent()))
             return false;
         
-        if (!hospedagemEvent.equalsToEvent(p.getHospedagemEvent()))
+        if (!hospedagemEvent.isInEvent(p.getHospedagemEvent()))
             return false;
         
         return true;
