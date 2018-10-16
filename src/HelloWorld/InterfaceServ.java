@@ -9,7 +9,7 @@ import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
-import Events.IEvent;
+import ServerEvents.IEvent;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
 
@@ -37,13 +37,9 @@ public interface InterfaceServ extends Remote
 
     public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException;
     
-    public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException;
+    //public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException;
     
-    public void removeInteresse(IEvent event, InterfaceCli cli) throws RemoteException;
-    
-    class HospedagemEvent implements IEvent {
-        
-    }
+    //public void removeInteresse(IEvent event, InterfaceCli cli) throws RemoteException;
 
     // How to get the class of a object.
     /*

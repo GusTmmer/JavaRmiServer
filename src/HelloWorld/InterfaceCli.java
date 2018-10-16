@@ -14,5 +14,5 @@ import java.rmi.RemoteException;
  */
 public interface InterfaceCli extends Remote 
 {
-    public void echo(String str) throws RemoteException;
+    public void notifyClient(String str) throws RemoteException;
 }

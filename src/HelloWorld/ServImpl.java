@@ -1,10 +1,16 @@
 package HelloWorld;
 
+import ClientEvents.HospedagemEvent;
+import ClientEvents.PacoteEvent;
+import ClientEvents.PassagemEvent;
 import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
-import Events.IEvent;
+import ServerEvents.ServHospedagemEvent;
+import ServerEvents.IEvent;
+import ServerEvents.ServPacoteEvent;
+import ServerEvents.ServPassagemEvent;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
 import java.rmi.RemoteException;
@@ -14,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -25,7 +33,9 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     private List<Passagem> passagensDisponiveis;
     private List<Hospedagem> hospedagensDisponiveis;
     
-    private Map<InterfaceCli, List<IEvent>> eventMapping = new ConcurrentHashMap<>();
+    private Map<InterfaceCli, List<HospedagemEvent>> eventHospedagem = new HashMap<>();
+    private Map<InterfaceCli, List<PassagemEvent>> eventPassagem = new HashMap<>();
+    private Map<InterfaceCli, List<PacoteEvent>> eventPacote = new HashMap<>();
     
     ServImpl() throws RemoteException {
         this.passagensDisponiveis = new ArrayList<>();
@@ -57,11 +67,10 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             consultaRetorno.put("Volta", passagensVolta);
         }
 
-
-        if (consultaRetorno.get("Ida").size() == 0)
+        if (consultaRetorno.get("Ida").isEmpty())
             return null;
 
-        if (!cp.isOneWay() && consultaRetorno.get("Volta").size() == 0)
+        if (!cp.isOneWay() && consultaRetorno.get("Volta").isEmpty())
             return null;
 
         return consultaRetorno;
@@ -97,7 +106,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             }
         }
 
-        if (hospedagens.size() == 0)
+        if (hospedagens.isEmpty())
             return null;
 
         return hospedagens;  
@@ -300,7 +309,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
     }
 
-    @Override
+    /*@Override
     public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
         
         if (!eventMapping.containsKey(cli))
@@ -313,10 +322,14 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     @Override
     public void removeInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
         eventMapping.get(cli).remove(event);
-    }
+    }*/
     
     public void adicionaPassagem(Passagem passagem) {
         passagensDisponiveis.add(passagem);
+        
+        // Cria um novo evento e compara com os eventos registrados por clientes
+        ServPassagemEvent event = new ServPassagemEvent(passagem);
+        comparaEventos(event);
     }
     
     public void adicionaHospedagem(Hospedagem novaHospedagem) {
@@ -336,9 +349,95 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
 
         // If did not exist, simply add to the list.
         hospedagensDisponiveis.add(novaHospedagem);
+        
+        // Cria um novo evento e compara com os eventos registrados por clientes
+        ServHospedagemEvent event = new ServHospedagemEvent(novaHospedagem);
+        comparaEventos(event);
     }
     
-    private void notifyClients() {
-
+    private void comparaEventos(ServHospedagemEvent servEvent) {
+        
+        for (InterfaceCli cliente : eventHospedagem.keySet()) {
+            for (HospedagemEvent clientEvent : eventHospedagem.get(cliente)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    
+                    try {
+                        notifyClient(cliente, clientEvent, servEvent.getHospedagemPrice());
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void comparaEventos(ServPassagemEvent servEvent) {
+        
+        for (InterfaceCli client : eventPassagem.keySet()) {
+            for (PassagemEvent clientEvent : eventPassagem.get(client)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    try {
+                        notifyClient(client, clientEvent, servEvent.getPassagemPrice());
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void comparaEventos(ServPacoteEvent servEvent) {
+        
+        for (InterfaceCli cliente : eventPacote.keySet()) {
+            for (PacoteEvent clientEvent : eventPacote.get(cliente)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    try {
+                        notifyClient(cliente, clientEvent, servEvent);
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void notifyClient(InterfaceCli cliente, HospedagemEvent hEvent, float price) throws RemoteException {
+        
+        StringBuilder message = new StringBuilder("Uma nova hospedagem em " + hEvent.getLocation() + " esta disponivel.\n");
+        message.append("Detalhes:\nDia de entrada: ").append(hEvent.getEntryDate()).append("\n");
+        message.append("Dia de saida: ").append(hEvent.getLeaveDate()).append("\n");
+        message.append("Numero de quartos: ").append(hEvent.getDesiredRooms()).append("\n");
+        message.append("Preco: ").append(price).append("\n");
+        
+        cliente.notifyClient(message.toString());
+    }
+    
+    private void notifyClient(InterfaceCli cliente, PassagemEvent pEvent, float price) throws RemoteException {
+       
+        StringBuilder message = new StringBuilder("Uma nova passagem de " + pEvent.getOrigin()+ " para " + pEvent.getDestination() + " esta disponivel.\n");
+        message.append("Detalhes:\nDia: ").append(pEvent.getDate()).append("\n");
+        message.append("Numero de passagens: ").append(pEvent.getDesiredSpots()).append("\n");
+        message.append("Preco: ").append(price).append("\n");
+        
+        cliente.notifyClient(message.toString());
+    }
+    
+    private void notifyClient(InterfaceCli cliente, PacoteEvent pacoteEvent, ServPacoteEvent servEvent) throws RemoteException {
+        
+        PassagemEvent pEvent = pacoteEvent.getPassagemEvent();
+        HospedagemEvent hEvent = pacoteEvent.getHospedagemEvent();
+        
+        StringBuilder message = new StringBuilder("Uma nova hospedagem em " + hEvent.getLocation() + " esta disponivel.\n");
+        message.append("Detalhes:\nDia de entrada: ").append(hEvent.getEntryDate()).append("\n");
+        message.append("Dia de saida: ").append(hEvent.getLeaveDate()).append("\n");
+        message.append("Numero de quartos: ").append(hEvent.getDesiredRooms()).append("\n");
+        message.append("Preco: ").append(servEvent.getServHospedagemEvent().getHospedagemPrice()).append("\n\n");
+        
+        message.append("Uma nova passagem de " + pEvent.getOrigin()+ " para " + pEvent.getDestination() + " esta disponivel.\n");
+        message.append("Detalhes:\nDia: ").append(pEvent.getDate()).append("\n");
+        message.append("Numero de passagens: ").append(pEvent.getDesiredSpots()).append("\n");
+        message.append("Preco: ").append(servEvent.getServPassagemEvent().getPassagemPrice()).append("\n");
+        
+        cliente.notifyClient(message.toString());
     }
 }
