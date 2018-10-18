@@ -1,25 +1,21 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ServerEvents;
 
 import ClientEvents.HospedagemEvent;
 import Supervisionados.Hospedagem;
 
 /**
- *
- * @author a1729756
+ * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
 public class ServHospedagemEvent implements IEvent {
     
     private final Hospedagem hospedagem;
     private final float hospedagemPrice;
+    private final String hospedagemPriceString;
     
     public ServHospedagemEvent(Hospedagem h) {
         this.hospedagem = h;
         this.hospedagemPrice = Float.parseFloat(h.getPrice());
+        this.hospedagemPriceString = h.getPrice();
     }
     
     /** Compares two events.
@@ -53,7 +49,7 @@ public class ServHospedagemEvent implements IEvent {
         return true;
     }
 
-    public float getHospedagemPrice() {
-        return hospedagemPrice;
+    public String getHospedagemPrice() {
+        return hospedagemPriceString;
     }    
 }

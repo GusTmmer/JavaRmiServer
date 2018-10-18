@@ -8,8 +8,7 @@ package ServerEvents;
 import ClientEvents.PacoteEvent;
 
 /**
- *
- * @author a1729756
+ * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
 public class ServPacoteEvent implements IEvent {
     

@@ -1,15 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Consultas;
 
 import java.io.Serializable;
 
 /**
- *
- * @author a1729756
+ * A class containing all the necessary information to make a plane ticket query in the server.
+ * Used by the client to communicate with the server.
  */
 public class ConsultaPassagem implements Serializable {
 

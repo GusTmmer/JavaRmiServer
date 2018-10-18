@@ -1,44 +1,35 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ServerEvents;
 
 import ClientEvents.PassagemEvent;
 import Supervisionados.Passagem;
 
 /**
- *
- * @author a1729756
+ * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
 public class ServPassagemEvent implements IEvent {
     
     private final Passagem passagem;
     private final float passagemPrice;
+    private final String passagemPriceString;
     
     public ServPassagemEvent(Passagem p) {
         this.passagem = p;
         this.passagemPrice = Float.parseFloat(p.getPrice());
+        this.passagemPriceString = p.getPrice();
     }
     
     public boolean matchesClientEvent(PassagemEvent pEvent) {
         
-        String origin = passagem.getOrigin();
-        String destination = passagem.getDestination();
-        int passagemDate = passagem.getGoingDate();
-        int availableSpots = passagem.getNSpotsLeft();
-        
-        if (!origin.equalsIgnoreCase(pEvent.getOrigin()))
+        if (!passagem.getOrigin().equalsIgnoreCase(pEvent.getOrigin()))
             return false;
         
-        if (!destination.equalsIgnoreCase(pEvent.getDestination()))
+        if (!passagem.getDestination().equalsIgnoreCase(pEvent.getDestination()))
             return false;
         
-        if (passagemDate != pEvent.getDate())
+        if (passagem.getGoingDate() != pEvent.getDate())
             return false;
         
-        if (availableSpots < pEvent.getDesiredSpots())
+        if (passagem.getAvailableSpots() < pEvent.getDesiredSpots())
             return false;
         
         if (passagemPrice > pEvent.getMaxPrice())
@@ -47,7 +38,7 @@ public class ServPassagemEvent implements IEvent {
         return true;
     }
 
-    public float getPassagemPrice() {
-        return passagemPrice;
+    public String getPassagemPrice() {
+        return passagemPriceString;
     }
 }

@@ -1,15 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Supervisionados;
 
 import Consultas.ConsultaPassagem;
 
 /**
  *
- * @author a1729756
+ * A class used to represent a plane ticket in the server.
  */
 public class Passagem {
 
@@ -27,7 +22,13 @@ public class Passagem {
         this.nSpotsLeft = n_spots_left;
         this.price = price;
     }
-    
+
+    /**
+     *
+     * @param cp : An object that holds info of a query from a client.
+     * @param isOriginDest Type of plane ticket query.
+     * @return boolean True if it matches; False, otherwise.
+     */
     public boolean matchesConsulta(ConsultaPassagem cp, boolean isOriginDest) {
   
         if (!isOriginDest) {
@@ -71,7 +72,7 @@ public class Passagem {
         return date;
     }
 
-    public int getNSpotsLeft() {
+    public int getAvailableSpots() {
         return nSpotsLeft;
     }
     

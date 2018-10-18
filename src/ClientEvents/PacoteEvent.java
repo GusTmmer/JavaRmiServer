@@ -1,13 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ClientEvents;
 
 /**
- *
- * @author a1729756
+ * A class containing all the necessary information to make a travel package event registry in the server.
+ * Used by the client to communicate with the server.
  */
 public class PacoteEvent implements IEvent {
     
@@ -26,16 +21,15 @@ public class PacoteEvent implements IEvent {
     public PassagemEvent getPassagemEvent() {
         return passagemEvent;
     }
-    
-    public boolean isInEvent(PacoteEvent p) {
-        
-        if (!passagemEvent.isInEvent(p.getPassagemEvent()))
+
+    public boolean equalsToEvent(PacoteEvent p) {
+
+        if (!passagemEvent.equalsToEvent(p.passagemEvent))
             return false;
-        
-        if (!hospedagemEvent.isInEvent(p.getHospedagemEvent()))
+
+        if (!hospedagemEvent.equalsToEvent(p.hospedagemEvent))
             return false;
-        
+
         return true;
     }
-    
 }

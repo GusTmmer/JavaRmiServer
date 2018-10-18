@@ -1,24 +1,17 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ClientEvents;
 
 import Consultas.Date;
-import Supervisionados.Hospedagem;
 
 /**
- *
- * @author a1729756
+ * A class containing all the necessary information to make a lodging event registry in the server.
+ * Used by the client to communicate with the server.
  */
 public class HospedagemEvent implements IEvent {
     
     private final String location;
     private final String entryDate;
     private final String leaveDate;
-    
-    
+
     private final int firstDate;
     private final int lastDate;
     private final int desiredRooms;
@@ -32,6 +25,31 @@ public class HospedagemEvent implements IEvent {
         this.leaveDate = leaveDate;
         this.firstDate = new Date(entryDate).reprDay;
         this.lastDate = new Date(leaveDate).reprDay;
+    }
+
+    /** Compares two HospedagemEvent objects.
+     *
+     * @param h The instance of HospedagemEvent we're comparing to.
+     * @return boolean true if equals; false, otherwise.
+     */
+    public boolean equalsToEvent(HospedagemEvent h) {
+
+        if (!location.equalsIgnoreCase(h.location))
+            return false;
+
+        if (firstDate != h.firstDate)
+            return false;
+
+        if (lastDate != h.lastDate)
+            return false;
+
+        if (desiredRooms != h.desiredRooms)
+            return false;
+
+        if (maxPrice != h.maxPrice)
+            return false;
+
+        return true;
     }
 
     public String getLocation() {
