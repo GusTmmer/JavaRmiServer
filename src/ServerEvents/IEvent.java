@@ -3,16 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package HelloWorld;
-
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+package ServerEvents;
 
 /**
  *
  * @author a1729756
  */
-public interface InterfaceCli extends Remote 
-{
-    public void notifyClient(String str) throws RemoteException;
+public interface IEvent {
+    
 }
