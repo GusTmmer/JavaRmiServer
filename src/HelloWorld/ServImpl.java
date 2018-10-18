@@ -276,28 +276,56 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 return null;
 
             passagensCompradas.put("Volta", passagemVoltaComprada);
-
-            // Alterando dados do servidor relativos a passagem.
-            int spotsLeft = passagemVoltaComprada.getNSpotsLeft();
-            passagemVoltaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
         }
 
-        // Alterando dados do servidor relativos a passagem.
-        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
-        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
+        // Got objects.
+        // Now synchronized verification and update.
+        synchronized (this) {
 
-        // Realizando alteracao dos dados do servidor.
-        int entryDate = ch.getEntryDate();
-        int leaveDate = ch.getLeaveDate();
+            int goingSpotsLeft = passagemIdaComprada.getNSpotsLeft();
 
-        for (int date = entryDate; date <= leaveDate; date++) {
+            // Checking if going passage remains OK.
+            if (cp.getnPeople() > goingSpotsLeft)
+                return null;
 
-            int nSpots = hospedagemComprada.availableDates.get(date);
-            hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+            int returnSpotsLeft = -1;
 
+            // Checking if return passage, if present, remains OK.
+            if (passagemVoltaComprada != null) {
+                returnSpotsLeft = passagemVoltaComprada.getNSpotsLeft();
+
+                if (cp.getnPeople() > returnSpotsLeft)
+                    return null;
+            }
+
+            // Checking if lodging remains OK.
+            int entryDate = ch.getEntryDate();
+            int leaveDate = ch.getLeaveDate();
+
+            for (int date = entryDate; date <= leaveDate; date++) {
+
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                if (ch.getnRooms() > nSpots)
+                    return null;
+            }
+
+            // Updating the database with passage details.
+            passagemIdaComprada.setNSpotsLeft(goingSpotsLeft - cp.getnPeople());
+
+            if (passagemVoltaComprada != null) {
+                passagemVoltaComprada.setNSpotsLeft(returnSpotsLeft - cp.getnPeople());
+            }
+
+            // Updating lodging details.
+            for (int date = entryDate; date <= leaveDate; date++) {
+
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+
+            }
+
+            return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
         }
-
-        return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
     }
 
     @Override
