@@ -1,5 +1,6 @@
 package HelloWorld;
 
+import ClientEvents.IEvent;
 import ClientEvents.HospedagemEvent;
 import ClientEvents.PacoteEvent;
 import ClientEvents.PassagemEvent;
@@ -8,7 +9,6 @@ import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
 import ServerEvents.ServHospedagemEvent;
-import ServerEvents.IEvent;
 import ServerEvents.ServPacoteEvent;
 import ServerEvents.ServPassagemEvent;
 import Supervisionados.Hospedagem;
@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * A server implementation responsible for managing client requests for plane ticket and lodgings.
+ * A server implementation responsible for managing client requests for plane ticket and lodgings queries.
  */
 public class ServImpl extends UnicastRemoteObject implements InterfaceServ
 {

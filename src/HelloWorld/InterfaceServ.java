@@ -1,10 +1,10 @@
 package HelloWorld;
 
+import ClientEvents.IEvent;
 import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
-import ServerEvents.IEvent;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
 
@@ -16,7 +16,7 @@ import java.util.Map;
 
 /**
  *
- * @author a1729756
+ * Interface representing available methods in the server.
  */
 public interface InterfaceServ extends Remote
 {

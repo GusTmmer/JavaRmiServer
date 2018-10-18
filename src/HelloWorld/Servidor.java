@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * The main class.
+ * The main class. Creates a client instance and gets user input.
  */
 public class Servidor {
     

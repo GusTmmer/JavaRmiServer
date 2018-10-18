@@ -10,7 +10,7 @@ import ClientEvents.PacoteEvent;
 /**
  * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
-public class ServPacoteEvent implements IEvent {
+public class ServPacoteEvent {
     
     private final ServHospedagemEvent servHospedagemEvent;
     private final ServPassagemEvent servPassagemEvent;

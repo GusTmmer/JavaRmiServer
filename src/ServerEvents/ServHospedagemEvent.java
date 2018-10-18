@@ -6,7 +6,7 @@ import Supervisionados.Hospedagem;
 /**
  * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
-public class ServHospedagemEvent implements IEvent {
+public class ServHospedagemEvent {
     
     private final Hospedagem hospedagem;
     private final float hospedagemPrice;

@@ -27,7 +27,7 @@ public class CommandParser {
         this.scanner = scanner;
     }
 
-    /**
+    /** Parses commands inputted by the user, getting appropriate handler.
      *
      * @param command : A string containing the command inputted by the user.
      */

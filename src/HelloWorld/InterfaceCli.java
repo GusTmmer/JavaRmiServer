@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 
 /**
  *
- * @author a1729756
+ * Interface representing available methods in the client.
  */
 public interface InterfaceCli extends Remote 
 {

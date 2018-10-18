@@ -6,7 +6,7 @@ import Supervisionados.Passagem;
 /**
  * A class responsible for generating a server event and comparing it with client events stored in the server.
  */
-public class ServPassagemEvent implements IEvent {
+public class ServPassagemEvent {
     
     private final Passagem passagem;
     private final float passagemPrice;
