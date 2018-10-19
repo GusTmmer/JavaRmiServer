@@ -2,13 +2,14 @@ package Supervisionados;
 
 import Consultas.ConsultaHospedagem;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
  *
  * A class used to represent a lodging in the server.
  */
-public class Hospedagem {
+public class Hospedagem implements Serializable {
 
     private String location;
     private String price;

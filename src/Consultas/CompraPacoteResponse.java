@@ -3,6 +3,7 @@ package Consultas;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -10,7 +11,7 @@ import java.util.Map;
  * Different from the similar "ConsultaPacoteResponse", this class can only hold at maximum two tickets and
  * a single lodging.
  */
-public class CompraPacoteResponse {
+public class CompraPacoteResponse implements Serializable {
 
     private Hospedagem hospedagem;
     private Map<String, Passagem> passagens;

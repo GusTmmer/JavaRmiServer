@@ -1,5 +1,7 @@
 package ClientEvents;
 
+import Consultas.Date;
+
 /**
  * A class containing all the necessary information to make a plane ticket event registry in the server.
  * Used by the client to communicate with the server.
@@ -8,14 +10,16 @@ public class PassagemEvent implements IEvent {
     
     private String origin;
     private String destination;
+    private String dateString;
     private int date;
     private int desiredSpots;
     private final float maxPrice;
 
-    public PassagemEvent(String origin, String destination, int date, int desiredSpots, float maxPrice) {
+    public PassagemEvent(String origin, String destination, String date, int desiredSpots, float maxPrice) {
         this.origin = origin;
         this.destination = destination;
-        this.date = date;
+        this.dateString = date;
+        this.date = new Date(date).reprDay;
         this.desiredSpots = desiredSpots;
         this.maxPrice = maxPrice;
     }
@@ -58,5 +62,9 @@ public class PassagemEvent implements IEvent {
 
     public float getMaxPrice() {
         return maxPrice;
+    }
+
+    public String getDateString() {
+        return dateString;
     }
 }

@@ -400,8 +400,10 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 }
             }
 
-            if (!eventAlreadyExists)
+            if (!eventAlreadyExists) {
+                System.out.println("Added h event.");
                 eventHospedagem.get(cli).add((HospedagemEvent) event);
+            }
         }
 
         // Handling PassagemEvent register.
@@ -417,8 +419,10 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 }
             }
 
-            if (!eventAlreadyExists)
+            if (!eventAlreadyExists) {
+                System.out.println("Added p event.");
                 eventPassagem.get(cli).add((PassagemEvent) event);
+            }
         }
 
         // Handling PackageEvent register.
@@ -434,8 +438,10 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 }
             }
 
-            if (!eventAlreadyExists)
+            if (!eventAlreadyExists) {
+                System.out.println("Added pc event.");
                 eventPacote.get(cli).add((PacoteEvent) event);
+            }
         }
     }
 
@@ -521,7 +527,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 for (Map.Entry<Integer, Integer> entry : novaHospedagem.availableDates.entrySet())
                     h.availableDates.put(entry.getKey(), entry.getValue());
 
-                return;
+                break;
             }
         }
 
@@ -546,16 +552,22 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
      */
     private void comparaEventos(ServHospedagemEvent servEvent) {
         
-        for (InterfaceCli cliente : eventHospedagem.keySet()) {
-            for (HospedagemEvent clientEvent : eventHospedagem.get(cliente)) {
+        for (InterfaceCli client : eventHospedagem.keySet()) {
+            List<HospedagemEvent> handledEvents = new ArrayList<>();
+
+            for (HospedagemEvent clientEvent : eventHospedagem.get(client)) {
                 if (servEvent.matchesClientEvent(clientEvent)) {
                     
                     try {
-                        notifyClient(cliente, clientEvent, servEvent.getHospedagemPrice());
+                        notifyClient(client, clientEvent, servEvent);
+                        handledEvents.add(clientEvent);
                     } catch (RemoteException ex) {
                         Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
+            }
+            for (HospedagemEvent handledEvent : handledEvents) {
+                eventHospedagem.get(client).remove(handledEvent);
             }
         }
     }
@@ -567,14 +579,21 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
     private void comparaEventos(ServPassagemEvent servEvent) {
         
         for (InterfaceCli client : eventPassagem.keySet()) {
+            List<PassagemEvent> handledEvents = new ArrayList<>();
+
             for (PassagemEvent clientEvent : eventPassagem.get(client)) {
                 if (servEvent.matchesClientEvent(clientEvent)) {
                     try {
-                        notifyClient(client, clientEvent, servEvent.getPassagemPrice());
+                        notifyClient(client, clientEvent, servEvent);
+                        handledEvents.add(clientEvent);
                     } catch (RemoteException ex) {
                         Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
+            }
+
+            for (PassagemEvent handledEvent : handledEvents) {
+                eventPassagem.get(client).remove(handledEvent);
             }
         }
     }
@@ -585,15 +604,21 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
      */
     private void comparaEventos(ServPacoteEvent servEvent) {
         
-        for (InterfaceCli cliente : eventPacote.keySet()) {
-            for (PacoteEvent clientEvent : eventPacote.get(cliente)) {
+        for (InterfaceCli client : eventPacote.keySet()) {
+            List<PacoteEvent> handledEvents = new ArrayList<>();
+
+            for (PacoteEvent clientEvent : eventPacote.get(client)) {
                 if (servEvent.matchesClientEvent(clientEvent)) {
                     try {
-                        notifyClient(cliente, clientEvent, servEvent);
+                        notifyClient(client, clientEvent, servEvent);
+                        handledEvents.add(clientEvent);
                     } catch (RemoteException ex) {
                         Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
+            }
+            for (PacoteEvent handledEvent : handledEvents) {
+                eventPacote.get(client).remove(handledEvent);
             }
         }
     }
@@ -602,10 +627,12 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
      *
      * @param client : A client reference
      * @param hEvent : The client event being processed.
-     * @param price : The price of the lodging.
+     * @param servEvent : The event that generated this notification.
      * @throws RemoteException In the case of network error.
      */
-    private void notifyClient(InterfaceCli client, HospedagemEvent hEvent, String price) throws RemoteException {
+    private void notifyClient(InterfaceCli client, HospedagemEvent hEvent, ServHospedagemEvent servEvent) throws RemoteException {
+
+        String price = servEvent.getHospedagemPrice();
 
         String message = "Uma nova hospedagem em " + hEvent.getLocation() + " esta disponivel.\n" +
                 "Detalhes:\nDia de entrada: " + hEvent.getEntryDate() + "\n" +
@@ -620,15 +647,15 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
      *
      * @param client : A client reference.
      * @param pEvent : The client event being processed.
-     * @param price : The price of the ticket.
+     * @param servEvent : The event that generated this notification.
      * @throws RemoteException In the case of network error.
      */
-    private void notifyClient(InterfaceCli client, PassagemEvent pEvent, String price) throws RemoteException {
+    private void notifyClient(InterfaceCli client, PassagemEvent pEvent, ServPassagemEvent servEvent) throws RemoteException {
 
         String message = "Uma nova passagem de " + pEvent.getOrigin() + " para " + pEvent.getDestination() +
-                " esta disponivel.\n" + "Detalhes:\nDia: " + pEvent.getDate() + "\n" +
+                " esta disponivel.\n" + "Detalhes:\nDia: " + pEvent.getDateString() + "\n" +
                 "Numero de passagens: " + pEvent.getDesiredSpots() + "\n" +
-                "Preco: " + price + "\n";
+                "Preco: " + servEvent.getPassagemPrice() + "\n";
 
         client.printNotification(message);
     }
@@ -652,7 +679,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 "Numero de quartos: " + hEvent.getDesiredRooms() + "\n" +
                 "Preco: " + servEvent.getServHospedagemEvent().getHospedagemPrice() + "\n\n" +
                 "Passagem de " + pEvent.getOrigin() + " para " + pEvent.getDestination() + ".\n" +
-                "Detalhes:\nDia: " + pEvent.getDate() + "\n" +
+                "Detalhes:\nDia: " + pEvent.getDateString() + "\n" +
                 "Numero de passagens: " + pEvent.getDesiredSpots() + "\n" +
                 "Preco: " + servEvent.getServPassagemEvent().getPassagemPrice() + "\n";
 

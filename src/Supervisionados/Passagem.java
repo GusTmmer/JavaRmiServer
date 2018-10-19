@@ -2,11 +2,13 @@ package Supervisionados;
 
 import Consultas.ConsultaPassagem;
 
+import java.io.Serializable;
+
 /**
  *
  * A class used to represent a plane ticket in the server.
  */
-public class Passagem {
+public class Passagem implements Serializable {
 
     private String origin;
     private String destination;
@@ -38,6 +40,9 @@ public class Passagem {
         
             if (!destination.equalsIgnoreCase(cp.getOrigin()))
                 return false;
+
+            if (date != cp.getReturnDate())
+                return false;
         } else {
         
             if (!origin.equalsIgnoreCase(cp.getOrigin()))
@@ -45,11 +50,11 @@ public class Passagem {
 
             if (!destination.equalsIgnoreCase(cp.getDestination()))
                 return false;
+
+            if (date != cp.getGoingDate())
+                return false;
         }
-        
-        if (date != cp.getGoingDate())
-            return false;
-        
+
         if (nSpotsLeft < cp.getnPeople())
             return false;
         

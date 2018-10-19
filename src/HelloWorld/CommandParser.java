@@ -123,6 +123,8 @@ public class CommandParser {
         );
 
         server.adicionaPassagem(novaPassagem);
+
+        System.out.println("Passagem criada.");
     }
 
 
