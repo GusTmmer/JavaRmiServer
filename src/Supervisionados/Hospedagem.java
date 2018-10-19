@@ -1,23 +1,18 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Supervisionados;
 
 import Consultas.ConsultaHospedagem;
-import Consultas.Date;
+import java.io.Serializable;
 
 import java.util.Map;
 
 /**
  *
- * @author a1729756
+ * A class used to represent a lodging in the server.
  */
-public class Hospedagem {
+public class Hospedagem implements Serializable{
 
-    public String location;
-    public String price;
+    private String location;
+    private String price;
     
     // Day representation number and capacity at that day.
     public Map <Integer, Integer> availableDates;
@@ -29,10 +24,6 @@ public class Hospedagem {
     public String getPrice() {
         return price;
     }
-
-    public Map<Integer, Integer> getAvailableDates() {
-        return availableDates;
-    }
     
     public Hospedagem(String location, Map<Integer, Integer> availableDates, String price) {
         this.location = location;
@@ -43,7 +34,12 @@ public class Hospedagem {
     public boolean matchesLocation(ConsultaHospedagem ch) {
         return location.equalsIgnoreCase(ch.getLocation());
     }
-    
+
+    /** Checks if this lodging has a record on a certain date.
+     *
+     * @param date : A date representation integer.
+     * @return boolean : True if record exists; False, otherwise.
+     */
     public boolean hasAvailableDay(int date) {
         for (Integer kDate : availableDates.keySet()) {
             if (kDate == date)
@@ -51,11 +47,17 @@ public class Hospedagem {
         }
         return false;
     }
-    
-    public boolean hasRooms(int date, int n_rooms) {
+
+    /** Checks if this lodging has rooms available in a particular date.
+     *
+     * @param date : A date representation integer.
+     * @param nRooms : The number of rooms being checked.
+     * @return boolean True if capacity is greater or equal than demand; False, otherwise.
+     */
+    public boolean hasRooms(int date, int nRooms) {
         for (Integer kDate : availableDates.keySet()) {
             if (kDate == date)
-                if (n_rooms <= availableDates.get(kDate)) {
+                if (nRooms <= availableDates.get(kDate)) {
                     return true;
                 }     
         }

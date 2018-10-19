@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package HelloWorld;
 
 import java.rmi.RemoteException;
@@ -14,19 +9,19 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author a1729756
+ * The main class. Creates a client instance and gets user input.
  */
 public class Servidor {
     
     public static void main(String[] args) {
         
-        ServImpl serv_impl;
+        ServImpl server;
         
         try {
-            serv_impl = new ServImpl();
+            server = new ServImpl();
             
-            Registry referenciaServicoNomes = LocateRegistry.createRegistry(2000);
-            referenciaServicoNomes.rebind("Trivago", serv_impl);
+            Registry serviceNames = LocateRegistry.createRegistry(2000);
+            serviceNames.rebind("Trivago", server);
             
         } catch (RemoteException ex) {
             Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);
@@ -35,13 +30,13 @@ public class Servidor {
         
         Scanner scanner = new Scanner(System.in);
         
-        CommandParser parser = new CommandParser(serv_impl, scanner);
+        CommandParser parser = new CommandParser(server, scanner);
         
-        while(true)
+        while (true)
         {
-            String command_input = scanner.nextLine();
+            String commandInput = scanner.nextLine();
             
-            parser.parseCommand(command_input);
+            parser.parseCommand(commandInput);
         }
     }
 }

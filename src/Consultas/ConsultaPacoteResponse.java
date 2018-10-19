@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A specialized class used by the server to reply to a client that queried a travel package request.
+ */
 public class ConsultaPacoteResponse implements Serializable {
 
     private List<Hospedagem> hospedagens;

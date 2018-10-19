@@ -1,45 +1,51 @@
 package HelloWorld;
 
+import ClientEvents.IEvent;
+import ClientEvents.HospedagemEvent;
+import ClientEvents.PacoteEvent;
+import ClientEvents.PassagemEvent;
 import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
-import Events.HospedagemEvent;
-import Events.IEvent;
-import Events.PacoteEvent;
-import Events.PassagemEvent;
+import ServerEvents.ServHospedagemEvent;
+import ServerEvents.ServPacoteEvent;
+import ServerEvents.ServPassagemEvent;
 import Supervisionados.Hospedagem;
+import Supervisionados.Pacote;
 import Supervisionados.Passagem;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
- * @author a1729756
+ * A server implementation responsible for managing client requests for plane ticket and lodgings queries.
  */
 public class ServImpl extends UnicastRemoteObject implements InterfaceServ
 {
     
-    private List<Passagem> passagensDisponiveis;
-    private List<Hospedagem> hospedagensDisponiveis;
+    private List<Passagem> passagensDisponiveis = new Vector<>();
+    private List<Hospedagem> hospedagensDisponiveis = new Vector<>();
     
-    private Map<InterfaceCli, List<HospedagemEvent>> eventHospedagem = new HashMap<>();
-    private Map<InterfaceCli, List<PassagemEvent>> eventPassagem = new HashMap<>();
-    private Map<InterfaceCli, List<PacoteEvent>> eventPacote = new HashMap<>();
+    private Map<InterfaceCli, List<HospedagemEvent>> eventHospedagem = new ConcurrentHashMap<>();
+    private Map<InterfaceCli, List<PassagemEvent>> eventPassagem = new ConcurrentHashMap<>();
+    private Map<InterfaceCli, List<PacoteEvent>> eventPacote = new ConcurrentHashMap<>();
     
     ServImpl() throws RemoteException {
-        this.passagensDisponiveis = new ArrayList<>();
-        this.hospedagensDisponiveis = new ArrayList<>();
-        
+
     }
 
+    /** Makes the query of a plane ticket.
+     *
+     * @param cp ConsultaPassagem : An object that holds the parameters of the plane ticket.
+     * @return Map<String, List<Passagem>> A list containing all matching lodgings. Be it going or returning.
+     */
     @Override
-    public Map<String, List<Passagem>> consultaPassagem(ConsultaPassagem cp) throws RemoteException {
+    public Map<String, List<Passagem>> consultaPassagem(ConsultaPassagem cp) {
         
         List<Passagem> passagensIda = new ArrayList<>();
         List<Passagem> passagensVolta = new ArrayList<>();
@@ -62,17 +68,22 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             consultaRetorno.put("Volta", passagensVolta);
         }
 
-        if (consultaRetorno.get("Ida").size() == 0)
+        if (consultaRetorno.get("Ida").isEmpty())
             return null;
 
-        if (!cp.isOneWay() && consultaRetorno.get("Volta").size() == 0)
+        if (!cp.isOneWay() && consultaRetorno.get("Volta").isEmpty())
             return null;
 
         return consultaRetorno;
     }
-    
+
+    /** Makes the query of a lodging.
+     *
+     * @param ch ConsultaHospedagem : An object that holds the parameters of the lodge.
+     * @return List<Hospedagem> A list containing all matching lodgings.
+     */
     @Override
-    public List<Hospedagem> consultaHospedagem(ConsultaHospedagem ch) throws RemoteException {
+    public List<Hospedagem> consultaHospedagem(ConsultaHospedagem ch) {
 
         List<Hospedagem> hospedagens = new ArrayList<>();
         
@@ -101,21 +112,20 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             }
         }
 
-        if (hospedagens.size() == 0)
+        if (hospedagens.isEmpty())
             return null;
 
         return hospedagens;  
     }
 
-    /** Realiza a consulta de um pacote (Uma passagem e uma hospedagem).
+    /** Makes the query of a travel package (Plane ticket and Lodging).
      *
-     * @param cp ConsultaPassagem : um objeto contendo os parâmetros da passagem.
-     * @param ch ConsultaHospedagem : um objeto contendo os parâmetros da hospedagem.
-     * @return ConsultaPacoteResponse Uma estrutura especializada que contém o retorno da consulta de passagem e de hospedagem.
-     * @throws RemoteException quando ocorre exceção durante a comunicação dos sistemas.
+     * @param cp ConsultaPassagem : An object that holds the parameters of the plane ticket.
+     * @param ch ConsultaHospedagem : An object that holds the parameters of the lodge.
+     * @return ConsultaPacoteResponse A specialized structure that holds the return of this query.
      */
     @Override
-    public ConsultaPacoteResponse consultaPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException {
+    public ConsultaPacoteResponse consultaPacote(ConsultaPassagem cp, ConsultaHospedagem ch) {
 
         Map<String, List<Passagem>> passagens = consultaPassagem(cp);
 
@@ -130,24 +140,23 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         return new ConsultaPacoteResponse(hospedagens, passagens);
     }
 
-    /** Realiza a compra de uma passagem registrada no servidor.
+    /** Makes a purchase of a plane ticket registered in the database.
      *
-     * @param cp ConsultaPassagem : um objeto contendo os parâmetros da passagem.
-     * @return Map<String, Passagem> Um campo do mapa contém a passagem de Ida e caso tenha sido requisitado,
-     * contém também um campo com a passagem de Volta.
-     * @throws RemoteException quando ocorre exceção durante a comunicação dos sistemas.
+     * @param cp : An object that holds the parameters of the plane ticket.
+     * @return Map<String, Passagem> A map where the keys are "Ida" and "Volta".
+     * Each holds an object with the bought ticket.
      */
     @Override
-    public Map<String, Passagem> compraPassagem(ConsultaPassagem cp) throws RemoteException {
+    public Map<String, Passagem> compraPassagem(ConsultaPassagem cp) {
 
-        // Pegando resultados de passagens que se assemelham a consulta.
+        // Getting tickets that matches the query.
         Map<String, List<Passagem>> consultaRetorno = consultaPassagem(cp);
 
-        // Garantindo que existao passagens que respeitam os criterios da consulta.
+        // Checking if really found a valid query.
         if (consultaRetorno == null)
             return null;
 
-        // Tentando achar uma passagem dentre as retornadas que tenha o mesmo preco da qual estamos comprando.
+        // Trying to find a ticket that has a matching price with the query.
         Passagem passagemIdaComprada = null, passagemVoltaComprada = null;
 
         for (Passagem p : consultaRetorno.get("Ida")) {
@@ -157,12 +166,15 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
             }
         }
 
+        // Checking if could find a valid ticket.
         if (passagemIdaComprada == null)
             return null;
 
+        // Saving the ticket to return it to the client.
         Map<String, Passagem> passagensCompradas = new HashMap<>();
         passagensCompradas.put("Ida", passagemIdaComprada);
 
+        // If not one way, check the returning tickets.
         if (!cp.isOneWay()) {
             for (Passagem p : consultaRetorno.get("Volta")) {
                 if (p.getPrice().contentEquals(cp.getPrice())) {
@@ -175,32 +187,53 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 return null;
 
             passagensCompradas.put("Volta", passagemVoltaComprada);
-
-            // Alterando dados do servidor.
-            int spotsLeft = passagemVoltaComprada.getNSpotsLeft();
-            passagemVoltaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
         }
 
-        // Alterando dados do servidor.
-        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
-        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
+        // Got objects.
+        // Now synchronized verification and update.
+        synchronized (this) {
 
+            int goingSpotsLeft = passagemIdaComprada.getAvailableSpots();
 
-        return passagensCompradas;
+            // Checking if going passage remains OK.
+            if (cp.getnPeople() > goingSpotsLeft)
+                return null;
+
+            int returnSpotsLeft = -1;
+
+            // Checking if return passage, if present, remains OK.
+            if (passagemVoltaComprada != null) {
+                returnSpotsLeft = passagemVoltaComprada.getAvailableSpots();
+
+                if (cp.getnPeople() > returnSpotsLeft)
+                    return null;
+            }
+
+            // Updating the database with passage details.
+            passagemIdaComprada.setNSpotsLeft(goingSpotsLeft - cp.getnPeople());
+
+            if (passagemVoltaComprada != null) {
+                passagemVoltaComprada.setNSpotsLeft(returnSpotsLeft - cp.getnPeople());
+            }
+
+            return passagensCompradas;
+        }
     }
 
-    /** Realiza a compra de uma hospedagem registrada no servidor.
+    /** Makes a purchase of a lodging stay registered in the database.
      *
-     * @param ch ConsultaHospedagem : um objeto contendo os parâmetros da hospedagem.
-     * @return Hospedagem Uma cópia da hospedagem comprada.
-     * @throws RemoteException quando ocorre exceção durante a comunicação dos sistemas.
+     * @param ch : An object that holds the parameters of the lodge.
+     * @return An object representing the bought lodging stay.
      */
     @Override
-    public Hospedagem compraHospedagem(ConsultaHospedagem ch) throws RemoteException {
+    public Hospedagem compraHospedagem(ConsultaHospedagem ch) {
 
         List<Hospedagem> hospedagens = consultaHospedagem(ch);
 
         Hospedagem hospedagemComprada = null;
+        
+        if (hospedagens == null)
+            return null;
 
         for (Hospedagem h : hospedagens) {
             if (h.getPrice().contentEquals(ch.getPrice())) {
@@ -212,22 +245,41 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         if (hospedagemComprada == null)
             return null;
 
-        // Realizando alteracao dos dados do servidor.
-        int entryDate = ch.getEntryDate();
-        int leaveDate = ch.getLeaveDate();
+        // Got objects.
+        // Now synchronized verification and update.
+        synchronized (this) {
 
-        for (int date = entryDate; date <= leaveDate; date++) {
+            // Checking if lodging remains OK.
+            int entryDate = ch.getEntryDate();
+            int leaveDate = ch.getLeaveDate();
 
-            int nSpots = hospedagemComprada.availableDates.get(date);
-            hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+            for (int date = entryDate; date <= leaveDate; date++) {
 
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                if (ch.getnRooms() > nSpots)
+                    return null;
+            }
+
+            // Updating lodging details in the database.
+            for (int date = entryDate; date <= leaveDate; date++) {
+
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+
+            }
+
+            return hospedagemComprada;
         }
-
-        return hospedagemComprada;
     }
 
+    /** Makes a purchase of a lodging stay and a plane ticket registered in the database.
+     *
+     * @param cp : An object that holds the parameters of the plane ticket.
+     * @param ch : An object that holds the parameters of the lodge.
+     * @return An object representing the bought lodging stay.
+     */
     @Override
-    public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) throws RemoteException {
+    public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) {
 
         List<Hospedagem> hospedagens = consultaHospedagem(ch);
 
@@ -251,8 +303,7 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
         if (consultaRetorno == null)
             return null;
 
-
-        // Tentando achar uma passagem dentre as retornadas que tenha o mesmo preco da qual estamos comprando.
+        // Trying to find a ticket in the returned ones that matches the price we're paying.
         Passagem passagemIdaComprada = null, passagemVoltaComprada = null;
 
         for (Passagem p : consultaRetorno.get("Ida")) {
@@ -280,59 +331,195 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
                 return null;
 
             passagensCompradas.put("Volta", passagemVoltaComprada);
-
-            // Alterando dados do servidor relativos a passagem.
-            int spotsLeft = passagemVoltaComprada.getNSpotsLeft();
-            passagemVoltaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
         }
 
-        // Alterando dados do servidor relativos a passagem.
-        int spotsLeft = passagemIdaComprada.getNSpotsLeft();
-        passagemIdaComprada.setNSpotsLeft(spotsLeft - cp.getnPeople());
+        // Got objects.
+        // Now synchronized verification and update.
+        synchronized (this) {
 
-        // Realizando alteracao dos dados do servidor.
-        int entryDate = ch.getEntryDate();
-        int leaveDate = ch.getLeaveDate();
+            int goingSpotsLeft = passagemIdaComprada.getAvailableSpots();
 
-        for (int date = entryDate; date <= leaveDate; date++) {
+            // Checking if going passage remains OK.
+            if (cp.getnPeople() > goingSpotsLeft)
+                return null;
 
-            int nSpots = hospedagemComprada.availableDates.get(date);
-            hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+            int returnSpotsLeft = -1;
 
+            // Checking if return passage, if present, remains OK.
+            if (passagemVoltaComprada != null) {
+                returnSpotsLeft = passagemVoltaComprada.getAvailableSpots();
+
+                if (cp.getnPeople() > returnSpotsLeft)
+                    return null;
+            }
+
+            // Checking if lodging remains OK.
+            int entryDate = ch.getEntryDate();
+            int leaveDate = ch.getLeaveDate();
+
+            for (int date = entryDate; date <= leaveDate; date++) {
+
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                if (ch.getnRooms() > nSpots)
+                    return null;
+            }
+
+            // Updating the database with passage details.
+            passagemIdaComprada.setNSpotsLeft(goingSpotsLeft - cp.getnPeople());
+
+            if (passagemVoltaComprada != null) {
+                passagemVoltaComprada.setNSpotsLeft(returnSpotsLeft - cp.getnPeople());
+            }
+
+            // Updating lodging details.
+            for (int date = entryDate; date <= leaveDate; date++) {
+
+                int nSpots = hospedagemComprada.availableDates.get(date);
+                hospedagemComprada.availableDates.put(date, nSpots - ch.getnRooms());
+
+            }
+
+            return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
         }
-
-        return new CompraPacoteResponse(hospedagemComprada, passagensCompradas);
     }
 
-    /*@Override
-    public void registraInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
-        
-        if (!eventMapping.containsKey(cli))
-            eventMapping.put(cli, new ArrayList<>());
-        
-        // TODO check if event already exists in list. (contains does not work)
-        eventMapping.get(cli).add(event);
-    }
-
+    /** Registers a client event in the system.
+     *
+     * @param cli A reference to the client registering the event.
+     * @param event The event structure. Can be a HospedagemEvent, PassagemEvent or PacoteEvent.
+     */
     @Override
-    public void removeInteresse(IEvent event, InterfaceCli cli) throws RemoteException {
-        eventMapping.get(cli).remove(event);
-    }*/
-    
-    public void adicionaPassagem(Passagem passagem) {
-        passagensDisponiveis.add(passagem);
-        
-        // Cria um novo evento e compara com os eventos registrados por clientes
-        PassagemEvent event = new PassagemEvent(passagem);
-        comparaEventos(event);
+    public void registraInteresse(InterfaceCli cli, IEvent event) {
+
+        // Handling HospedagemEvent register.
+        if (event instanceof HospedagemEvent) {
+            if (!eventHospedagem.containsKey(cli))
+                eventHospedagem.put(cli, new ArrayList<>());
+
+            boolean eventAlreadyExists = false;
+            for (HospedagemEvent h : eventHospedagem.get(cli)) {
+                if (h.equalsToEvent((HospedagemEvent) event)) {
+                    eventAlreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!eventAlreadyExists)
+                eventHospedagem.get(cli).add((HospedagemEvent) event);
+        }
+
+        // Handling PassagemEvent register.
+        if (event instanceof PassagemEvent) {
+            if (!eventPassagem.containsKey(cli))
+                eventPassagem.put(cli, new ArrayList<>());
+
+            boolean eventAlreadyExists = false;
+            for (PassagemEvent p : eventPassagem.get(cli)) {
+                if (p.equalsToEvent((PassagemEvent) event)) {
+                    eventAlreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!eventAlreadyExists)
+                eventPassagem.get(cli).add((PassagemEvent) event);
+        }
+
+        // Handling PackageEvent register.
+        if (event instanceof PacoteEvent) {
+            if (!eventPacote.containsKey(cli))
+                eventPacote.put(cli, new ArrayList<>());
+
+            boolean eventAlreadyExists = false;
+            for (PacoteEvent p : eventPacote.get(cli)) {
+                if (p.equalsToEvent((PacoteEvent) event)) {
+                    eventAlreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!eventAlreadyExists)
+                eventPacote.get(cli).add((PacoteEvent) event);
+        }
     }
-    
+
+    /** Removes a client event from the system.
+     *
+     * @param cli A reference to the client registering the event.
+     * @param event The event structure. Can be a HospedagemEvent, PassagemEvent or PacoteEvent.
+     */
+    @Override
+    public void removeInteresse(InterfaceCli cli, IEvent event) {
+
+        // Handling HospedagemEvent removal.
+        if (event instanceof HospedagemEvent) {
+            if (!eventHospedagem.containsKey(cli))
+                return;
+
+            for (HospedagemEvent h : eventHospedagem.get(cli)) {
+                if (h.equalsToEvent((HospedagemEvent) event)) {
+                    eventHospedagem.get(cli).remove(h);
+                    break;
+                }
+            }
+        }
+
+        // Handling PassagemEvent removal.
+        if (event instanceof PassagemEvent) {
+            if (!eventPassagem.containsKey(cli))
+                return;
+
+            for (PassagemEvent p : eventPassagem.get(cli)) {
+                if (p.equalsToEvent((PassagemEvent) event)) {
+                    eventPassagem.get(cli).remove(p);
+                    break;
+                }
+            }
+        }
+
+        // Handling PackageEvent removal.
+        if (event instanceof PacoteEvent) {
+            if (!eventPacote.containsKey(cli))
+                return;
+
+            for (PacoteEvent p : eventPacote.get(cli)) {
+                if (p.equalsToEvent((PacoteEvent) event)) {
+                    eventPacote.get(cli).remove(p);
+                    break;
+                }
+            }
+        }
+    }
+
+    /** Adds a new ticket to the list of available tickets.
+     *
+     * @param novaPassagem : The ticket structure containing its details.
+     */
+    public void adicionaPassagem(Passagem novaPassagem) {
+        passagensDisponiveis.add(novaPassagem);
+
+        // Creates a server event and checks if it matches with any registered client event.
+        ServPassagemEvent passagemEvent = new ServPassagemEvent(novaPassagem);
+        comparaEventos(passagemEvent);
+
+        // Generates an event for a package.
+        for (Hospedagem h : hospedagensDisponiveis) {
+            ServHospedagemEvent hospedagemEvent = new ServHospedagemEvent(h);
+            ServPacoteEvent pacoteEvent = new ServPacoteEvent(hospedagemEvent, passagemEvent);
+            comparaEventos(pacoteEvent);
+        }
+    }
+
+    /** Adds a new lodging to the list of available lodgings.
+     *
+     * @param novaHospedagem : The ticket structure containing its details.
+     */
     public void adicionaHospedagem(Hospedagem novaHospedagem) {
 
         // Goes through existing lodgings by location and checks if there was
         // already a lodging defined with that name.
         for (Hospedagem h : hospedagensDisponiveis) {
-            if (h.location.contentEquals(novaHospedagem.location)) {
+            if (h.getLocation().contentEquals(novaHospedagem.getLocation())) {
 
                 // If there was, update available dates.
                 for (Map.Entry<Integer, Integer> entry : novaHospedagem.availableDates.entrySet())
@@ -344,60 +531,137 @@ public class ServImpl extends UnicastRemoteObject implements InterfaceServ
 
         // If did not exist, simply add to the list.
         hospedagensDisponiveis.add(novaHospedagem);
+
+        // Creates a server event and checks if it matches with any registered client event.
+        ServHospedagemEvent hospedagemEvent = new ServHospedagemEvent(novaHospedagem);
+        comparaEventos(hospedagemEvent);
+
+        // Generates an event for a package.
+        for (Passagem p : passagensDisponiveis) {
+            ServPassagemEvent passagemEvent = new ServPassagemEvent(p);
+            ServPacoteEvent pacoteEvent = new ServPacoteEvent(hospedagemEvent, passagemEvent);
+            comparaEventos(pacoteEvent);
+        }
+    }
+
+    /** Compares a server generated event with client events. If any match, issues a notify message to that client.
+     *
+     * @param servEvent : The server generated event.
+     */
+    private void comparaEventos(ServHospedagemEvent servEvent) {
         
-        // Cria um novo evento e compara com os eventos registrados por clientes
-        HospedagemEvent event = new HospedagemEvent(novaHospedagem);
-        comparaEventos(event);
-    }
-    
-    private void comparaEventos(HospedagemEvent event) {
         for (InterfaceCli cliente : eventHospedagem.keySet()) {
-            for (int i = 0; i < eventHospedagem.get(cliente).size(); i++) {
-                for (HospedagemEvent h : eventHospedagem.get(i)) {
-                   if (h.isInEvent(event)) {
-                       notifyClient(cliente, h);
-                   }
+            for (HospedagemEvent clientEvent : eventHospedagem.get(cliente)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    
+                    try {
+                        notifyClient(cliente, clientEvent, servEvent.getHospedagemPrice());
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
     }
-    
-    private void comparaEventos(PassagemEvent event) {
-        for (InterfaceCli cliente : eventPassagem.keySet()) {
-            for (int i = 0; i < eventPassagem.get(cliente).size(); i++) {
-                for (PassagemEvent p : eventPassagem.get(i)) {
-                   if (event.isInEvent(p)) {
-                       notifyClient(cliente, p);
-                   }
+
+    /** Compares a server generated event with client events. If any match, issues a notify message to that client.
+     *
+     * @param servEvent : The server generated event.
+     */
+    private void comparaEventos(ServPassagemEvent servEvent) {
+        
+        for (InterfaceCli client : eventPassagem.keySet()) {
+            for (PassagemEvent clientEvent : eventPassagem.get(client)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    try {
+                        notifyClient(client, clientEvent, servEvent.getPassagemPrice());
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
     }
-    
-    private void comparaEventos(PacoteEvent event) {
+
+    /** Compares a server generated event with client events. If any match, issues a notify message to that client.
+     *
+     * @param servEvent : The server generated event.
+     */
+    private void comparaEventos(ServPacoteEvent servEvent) {
+        
         for (InterfaceCli cliente : eventPacote.keySet()) {
-            for (int i = 0; i < eventPacote.get(cliente).size(); i++) {
-                for (PacoteEvent p : eventPacote.get(i)) {
-                   if (event.isInEvent(p)) {
-                       notifyClient(cliente, p);
-                   }
+            for (PacoteEvent clientEvent : eventPacote.get(cliente)) {
+                if (servEvent.matchesClientEvent(clientEvent)) {
+                    try {
+                        notifyClient(cliente, clientEvent, servEvent);
+                    } catch (RemoteException ex) {
+                        Logger.getLogger(ServImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
     }
-    
-    private void notifyClient(InterfaceCli cliente, HospedagemEvent hosp) {
-       //envia mensagem para cliente
-       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
+
+    /** Sends a message to the client about a new lodging available.
+     *
+     * @param client : A client reference
+     * @param hEvent : The client event being processed.
+     * @param price : The price of the lodging.
+     * @throws RemoteException In the case of network error.
+     */
+    private void notifyClient(InterfaceCli client, HospedagemEvent hEvent, String price) throws RemoteException {
+
+        String message = "Uma nova hospedagem em " + hEvent.getLocation() + " esta disponivel.\n" +
+                "Detalhes:\nDia de entrada: " + hEvent.getEntryDate() + "\n" +
+                "Dia de saida: " + hEvent.getLeaveDate() + "\n" +
+                "Numero de quartos: " + hEvent.getDesiredRooms() + "\n" +
+                "Preco: " + price + "\n";
+
+        client.printNotification(message);
     }
-    
-    private void notifyClient(InterfaceCli cliente, PassagemEvent hosp) {
-       //envia mensagem para cliente
-       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
+
+    /** Sends a message to the client about a new plane ticket available.
+     *
+     * @param client : A client reference.
+     * @param pEvent : The client event being processed.
+     * @param price : The price of the ticket.
+     * @throws RemoteException In the case of network error.
+     */
+    private void notifyClient(InterfaceCli client, PassagemEvent pEvent, String price) throws RemoteException {
+
+        String message = "Uma nova passagem de " + pEvent.getOrigin() + " para " + pEvent.getDestination() +
+                " esta disponivel.\n" + "Detalhes:\nDia: " + pEvent.getDate() + "\n" +
+                "Numero de passagens: " + pEvent.getDesiredSpots() + "\n" +
+                "Preco: " + price + "\n";
+
+        client.printNotification(message);
     }
-    
-    private void notifyClient(InterfaceCli cliente, PacoteEvent hosp) {
-       //envia mensagem para cliente
-       //cliente.notify("Uma nova hospedagem em " + hosp.getLocation + " esta disponivel entre os dias ...");
+
+    /** Sends a message to the client about a new plane ticket available.
+     *
+     * @param client : A client reference.
+     * @param pacoteEvent : The client event being processed.
+     * @param servEvent : The event that generated this notification.
+     * @throws RemoteException In the case of network error.
+     */
+    private void notifyClient(InterfaceCli client, PacoteEvent pacoteEvent, ServPacoteEvent servEvent) throws RemoteException {
+        
+        PassagemEvent pEvent = pacoteEvent.getPassagemEvent();
+        HospedagemEvent hEvent = pacoteEvent.getHospedagemEvent();
+
+        String message = "********************************************\n" +
+                "Um pacote de seu interesse está agora disponível.\n" +
+                "Hospedagem em " + hEvent.getLocation() + ".\n" +
+                "Detalhes:\nDia de entrada: " + hEvent.getEntryDate() + "\n" +
+                "Dia de saida: " + hEvent.getLeaveDate() + "\n" +
+                "Numero de quartos: " + hEvent.getDesiredRooms() + "\n" +
+                "Preco: " + servEvent.getServHospedagemEvent().getHospedagemPrice() + "\n\n" +
+                "Passagem de " + pEvent.getOrigin() + " para " + pEvent.getDestination() + ".\n" +
+                "Detalhes:\nDia: " + pEvent.getDate() + "\n" +
+                "Numero de passagens: " + pEvent.getDesiredSpots() + "\n" +
+                "Preco: " + servEvent.getServPassagemEvent().getPassagemPrice() + "\n" +
+                "********************************************\n";
+
+        client.printNotification(message);
     }
 }

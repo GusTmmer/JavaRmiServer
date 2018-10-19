@@ -1,15 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Supervisionados;
+
+import java.io.Serializable;
 
 /**
  *
- * @author a1236776
+ * A class used to represent a travel package in the server.
  */
-public class Pacote {
+public class Pacote implements Serializable{
     
     public Hospedagem hospedagem;
     public Passagem passagem;
