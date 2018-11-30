@@ -4,11 +4,15 @@ import Consultas.CompraPacoteResponse;
 import Consultas.ConsultaHospedagem;
 import Consultas.ConsultaPacoteResponse;
 import Consultas.ConsultaPassagem;
+import Log.LogHandler;
 import Supervisionados.Hospedagem;
 import Supervisionados.Passagem;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -16,6 +20,10 @@ import java.util.*;
  */
 public class CoordServer extends UnicastRemoteObject implements ICoordServerFromClient
 {   
+    private LogHandler log = new LogHandler("coord.log");
+    
+  
+    
     CoordServer() throws RemoteException {
 
     }
@@ -80,6 +88,20 @@ public class CoordServer extends UnicastRemoteObject implements ICoordServerFrom
      */
     @Override
     public CompraPacoteResponse compraPacote(ConsultaPassagem cp, ConsultaHospedagem ch) {
-        return null;
+        
+        synchronized(this) {
+            try {
+                log.write(Integer.toString(++transacoes));
+            } catch (IOException ex) {
+
+            }
+        }
+        
+        
+
+        
     }
+    
+    
+}
 }
